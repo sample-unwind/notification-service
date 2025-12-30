@@ -25,13 +25,13 @@ def shutdown():
 
 @app.get("/health/live")
 def health_live():
-    return {"status": "UP"}
+    return {"status": "alive"}
 
 
 @app.get("/health/ready")
 def health_ready():
     if consumer.is_connected():
-        return {"status": "UP", "rabbitmq": "connected"}
+        return {"status": "alive", "rabbitmq": "connected"}
 
     host = os.getenv("RABBITMQ_HOST", "localhost")
     port = int(os.getenv("RABBITMQ_PORT", "5672"))
@@ -45,7 +45,7 @@ def health_ready():
         )
         conn = pika.BlockingConnection(params)
         conn.close()
-        return {"status": "UP", "rabbitmq": "reachable"}
+        return {"status": "alive", "rabbitmq": "reachable"}
     except Exception as e:
         return JSONResponse(
             status_code=503,

@@ -25,3 +25,4 @@ def health_ready():
 @app.get("/")
 def root():
     return {"message": "Notification Service API"}
+

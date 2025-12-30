@@ -23,6 +23,11 @@ def shutdown():
     consumer.stop()
 
 
+@app.get("/")
+def root():
+    return {"status": "OK"}
+
+
 @app.get("/health/live")
 def health_live():
     return {"status": "alive"}

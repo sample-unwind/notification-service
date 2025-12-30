@@ -25,7 +25,7 @@ def shutdown():
 
 @app.get("/")
 def root():
-    return {"status": "OK"}
+    return {"message": "notification-service"}
 
 
 @app.get("/health/live")
@@ -35,9 +35,6 @@ def health_live():
 
 @app.get("/health/ready")
 def health_ready():
-    if consumer.is_connected():
-        return {"status": "alive", "rabbitmq": "connected"}
-
     host = os.getenv("RABBITMQ_HOST", "localhost")
     port = int(os.getenv("RABBITMQ_PORT", "5672"))
     user = os.getenv("RABBITMQ_USER", "guest")
@@ -45,14 +42,9 @@ def health_ready():
 
     try:
         creds = pika.PlainCredentials(user, password)
-        params = pika.ConnectionParameters(
-            host=host, port=port, credentials=creds, socket_timeout=3
-        )
+        params = pika.ConnectionParameters(host=host, port=port, credentials=creds, socket_timeout=3)
         conn = pika.BlockingConnection(params)
         conn.close()
-        return {"status": "alive", "rabbitmq": "reachable"}
+        return {"status": "ready"}
     except Exception as e:
-        return JSONResponse(
-            status_code=503,
-            content={"status": "DOWN", "rabbitmq": "unreachable", "error": str(e)},
-        )
+        return JSONResponse(status_code=503, content={"status": "not_ready", "error": str(e)})

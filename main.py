@@ -103,6 +103,10 @@ When a payment event is received, notifications are sent to:
 See the `/events/schema` endpoint for the JSON schema of consumed events.
     """,
     version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
+    root_path="/api/v1/notification",
     contact={
         "name": "Parkora Team",
         "email": "team@parkora.crn.si",

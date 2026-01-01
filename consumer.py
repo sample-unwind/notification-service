@@ -5,9 +5,14 @@ import threading
 import time
 from typing import Optional
 
+import httpx
 import pika
 
 logger = logging.getLogger("notification")
+
+# ntfy.sh configuration
+NTFY_TOPIC = os.getenv("NTFY_TOPIC", "parkora-notification-service")
+NTFY_URL = f"https://ntfy.sh/{NTFY_TOPIC}"
 
 
 class PaymentEventConsumer:
@@ -77,12 +82,47 @@ class PaymentEventConsumer:
             ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
     def send_notification(self, payment_event: dict) -> None:
+        """
+        Send notification via ntfy.sh push notification service.
+        Also logs the notification for debugging.
+        """
+        user_id = payment_event.get("user_id", "unknown")
+        amount = payment_event.get("amount", 0)
+        currency = payment_event.get("currency", "EUR")
+        reservation_id = payment_event.get("reservation_id", "unknown")
+        transaction_id = payment_event.get("transaction_id", "unknown")
+
+        # Log the notification
         logger.info(
-            f"[NOTIFICATION] Sending confirmation email to user {payment_event['user_id']}: "
-            f"Payment of {payment_event['amount']} {payment_event['currency']} "
-            f"for reservation {payment_event['reservation_id']} was successful. "
-            f"Transaction ID: {payment_event['transaction_id']}"
+            f"[NOTIFICATION] Payment confirmed for user {user_id}: "
+            f"{amount} {currency} for reservation {reservation_id}"
         )
+
+        # Send to ntfy.sh
+        try:
+            message = (
+                f"Amount: {amount} {currency}\n"
+                f"Reservation: {reservation_id}\n"
+                f"Transaction: {transaction_id}"
+            )
+            response = httpx.post(
+                NTFY_URL,
+                content=message,
+                headers={
+                    "Title": "Parkora Payment Confirmed",
+                    "Priority": "default",
+                    "Tags": "credit_card,white_check_mark",
+                },
+                timeout=10.0,
+            )
+            response.raise_for_status()
+            logger.info(f"ntfy.sh notification sent successfully to {NTFY_TOPIC}")
+        except httpx.TimeoutException:
+            logger.warning(f"Timeout sending ntfy notification to {NTFY_TOPIC}")
+        except httpx.HTTPStatusError as e:
+            logger.warning(f"HTTP error sending ntfy notification: {e}")
+        except Exception as e:
+            logger.warning(f"Failed to send ntfy notification: {e}")
 
     def start_consuming(self) -> None:
         """

@@ -13,9 +13,14 @@ service:
   port: 80
   targetPort: 8000
 
-# No ingress needed - internal service only
+# No ingress needed - internal service only (except for docs)
 ingress:
-  enabled: false
+  enabled: true
+  className: kong
+  annotations:
+    konghq.com/strip-path: "true"
+  host: parkora.crn.si
+  path: /api/v1/notification
 
 resources:
   limits:
